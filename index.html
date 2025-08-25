@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Kanban Interativo - Fornecedores de Baquetas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --light: #ecf0f1;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --gray: #95a5a6;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .kanban-container {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding: 20px 0;
+        }
+        
+        .column {
+            background: var(--light);
+            border-radius: 8px;
+            min-width: 300px;
+            width: 100%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .column-header {
+            padding: 15px;
+            color: white;
+            border-radius: 8px 8px 0 0;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .column-content {
+            padding: 15px;
+            min-height: 500px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            cursor: move;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+        
+        .supplier-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .card-content {
+            margin-bottom: 15px;
+        }
+        
+        .criteria-list {
+            list-style: none;
+            margin-top: 10px;
+        }
+        
+        .criteria-list li {
+            padding: 5px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #eee;
+            border-radius: 4px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            background: var(--secondary);
+            border-radius: 4px;
+        }
+        
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        
+        .btn-primary {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+        
+        .evaluation-panel {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .evaluation-header {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--primary);
+            text-align: center;
+        }
+        
+        .evaluation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .evaluation-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .evaluation-score {
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-align: center;
+            margin: 15px 0;
+            color: var(--primary);
+        }
+        
+        .conclusion {
+            margin-top: 30px;
+            padding: 20px;
+            background: var(--success);
+            color: white;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .dragging {
+            opacity: 0.6;
+        }
+        
+        /* Modal de avaliação */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .close {
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        .criteria-item {
+            margin-bottom: 15px;
+        }
+        
+        .criteria-item label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .score-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .score-slider {
+            width: 100%;
+            margin: 10px 0;
+        }
+        
+        .score-value {
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        /* Cores para as colunas */
+        .column-cotacao .column-header { background: #3498db; }
+        .column-proposta .column-header { background: #9b59b6; }
+        .column-analise .column-header { background: #f39c12; }
+        .column-financeira .column-header { background: #d35400; }
+        .column-comparativo .column-header { background: #16a085; }
+        .column-decisao .column-header { background: #2c3e50; }
+        .column-contrato .column-header { background: #27ae60; }
+        
+        /* Cores para os status */
+        .status-pendente { background: #f39c12; color: white; }
+        .status-andamento { background: #3498db; color: white; }
+        .status-concluido { background: #27ae60; color: white; }
+        
+        /* Ranking */
+        .ranking-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 20px;
+        }
+        
+        .rank-item {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            flex: 1;
+            max-width: 250px;
+        }
+        
+        .rank-1 {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .rank-2 {
+            background: linear-gradient(135deg, #C0C0C0, #A9A9A9);
+            color: white;
+        }
+        
+        .rank-3 {
+            background: linear-gradient(135deg, #CD7F32, #8C6B46);
+            color: white;
+        }
+        
+        .rank-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        @media (max-width: 1200px) {
+            .kanban-container {
+                flex-direction: column;
+            }
+            
+            .column {
+                min-width: 100%;
+                margin-bottom: 20px;
+            }
+            
+            .ranking-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .rank-item {
+                width: 100%;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Sistema Kanban - Seleção de Fornecedores</h1>
+        <p class="subtitle">Avaliação comparativa de fornecedores de baquetas para instrumentos de percussão</p>
+    </header>
+
+    <div class="container">
+        <div class="kanban-container">
+            <!-- Coluna Cotação Solicitada -->
+            <div class="column column-cotacao">
+                <div class="column-header">
+                    <span>📋 Cotação Solicitada</span>
+                    <span class="badge">3</span>
+                </div>
+                <div class="column-content">
+                    <div class="card" draggable="true" id="card-1" data-supplier="A">
+                        <div class="card-header">
+                            <span class="supplier-name">Fornecedor A - Madeira Premium</span>
+                        </div>
+                        <div class="card-content">
+                            <p>Especialista em madeiras nobres (pau-brasil, ébano)</p>
+                            <div class="progress-bar">
+                                <div class="progress" style="width: 20%"></div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <span class="status-badge status-pendente">Pendente</span>
+                            <button class="btn btn-primary evaluate-btn" data-supplier="A">Avaliar</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card" draggable="true" id="card-2" data-supplier="B">
+                        <div class="card-header">
+                            <span class="supplier-name">Fornecedor B - Materiais Sintéticos</span>
+                        </div>
+                        <div class="card-content">
+                            <p>Especialista em nylon e fibra de carbono</p>
+                            <div class="progress-bar">
+                                <div class="progress" style="width: 20%"></div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <span class="status-badge status-pendente">Pendente</span>
+                            <button class="btn btn-primary evaluate-btn" data-supplier="B">Avaliar</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card" draggable="true" id="card-3" data-supplier="C">
+                        <div class="card-header">
+                            <span class="supplier-name">Fornecedor C - Madeira Standard</span>
+                        </div>
+                        <div class="card-content">
+                            <p>Especialista em madeiras comuns (bétula, carvalho)</p>
+                            <div class="progress-bar">
+                                <div class="progress" style="width: 20%"></div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <span class="status-badge status-pendente">Pendente</span>
+                            <button class="btn btn-primary evaluate-btn" data-supplier="C">Avaliar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Coluna Proposta Recebida -->
+            <div class="column column-proposta">
+                <div class="column-header">
+                    <span>📩 Proposta Recebida</span>
+                    <span class="badge">0</span>
+                </div>
+                <div class="column-content">
+                    <!-- Cards serão movidos para aqui -->
+                </div>
+            </div>
+            
+            <!-- Coluna Análise Técnica -->
+            <div class="column column-analise">
+                <div class="column-header">
+                    <span>🔍 Análise Técnica</span>
+                    <span class="badge">0</span>
+                </div>
+                <div class="column-content">
+                    <!-- Cards serão movidos para aqui -->
+                </div>
+            </div>
+            
+            <!-- Coluna Avaliação Financeira -->
+            <div class="column column-financeira">
+                <div class="column-header">
+                    <span>💰 Avaliação Financeira</span>
+                    <span class="badge">0</span>
+                </div>
+                <div class="column-content">
+                    <!-- Cards serão movidos para aqui -->
+                </div>
+            </div>
+            
+            <!-- Coluna Comparativo Final -->
+            <div class="column column-comparativo">
+                <div class="column-header">
+                    <span>⚖️ Comparativo Final</span>
+                    <span class="badge">0</span>
+                </div>
+                <div class="column-content">
+                    <!-- Cards serão movidos para aqui -->
+                </div>
+            </div>
+            
+            <!-- Coluna Decisão Tomada -->
+            <div class="column column-decisao">
+                <div class="column-header">
+                    <span>✅ Decisão Tomada</span>
+                    <span class="badge">0</span>
+                </div>
+                <div class="column-content">
+                    <!-- Cards serão movidos para aqui -->
+                </div>
+            </div>
+            
+            <!-- Coluna Contrato Formalizado -->
+            <div class="column column-contrato">
+                <div class="column-header">
+                    <span>📊 Contrato Formalizado</span>
+                    <span class="badge">0</span>
+                </div>
+                <div class="column-content">
+                    <!-- Cards serão movidos para aqui -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="evaluation-panel">
+            <h2 class="evaluation-header">Análise Comparativa de Fornecedores</h2>
+            
+            <div class="evaluation-grid" id="evaluation-results">
+                <!-- Resultados da avaliação serão inseridos aqui via JavaScript -->
+            </div>
+            
+            <div class="ranking-container" id="ranking-results">
+                <!-- Ranking dos fornecedores será inserido aqui via JavaScript -->
+            </div>
+            
+            <div class="conclusion" id="conclusion-text">
+                <h2>Complete a Avaliação dos Fornecedores</h2>
+                <p>Use os botões "Avaliar" em cada card para inserir as notas dos critérios de avaliação.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Avaliação -->
+    <div class="modal" id="evaluation-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Avaliar Fornecedor</h2>
+                <span class="close" id="close-modal">&times;</span>
+            </div>
+            <div id="modal-body">
+                <!-- Conteúdo do modal será inserido via JavaScript -->
+            </div>
+            <div style="margin-top: 20px; text-align: center;">
+                <button class="btn btn-primary" id="save-evaluation">Salvar Avaliação</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dados dos fornecedores e critérios de avaliação
+        const suppliers = {
+            'A': {
+                name: 'Fornecedor A - Madeira Premium',
+                description: 'Especialista em madeiras nobres (pau-brasil, ébano)',
+                scores: {
+                    qualidade: 0,
+                    preco: 0,
+                    prazo: 0,
+                    suporte: 0
+                },
+                totalScore: 0
+            },
+            'B': {
+                name: 'Fornecedor B - Materiais Sintéticos',
+                description: 'Especialista em nylon e fibra de carbono',
+                scores: {
+                    qualidade: 0,
+                    preco: 0,
+                    prazo: 0,
+                    suporte: 0
+                },
+                totalScore: 0
+            },
+            'C': {
+                name: 'Fornecedor C - Madeira Standard',
+                description: 'Especialista em madeiras comuns (bétula, carvalho)',
+                scores: {
+                    qualidade: 0,
+                    preco: 0,
+                    prazo: 0,
+                    suporte: 0
+                },
+                totalScore: 0
+            }
+        };
+
+        const criteria = {
+            qualidade: { name: 'Qualidade do Material', weight: 0.3 },
+            preco: { name: 'Preço', weight: 0.25 },
+            prazo: { name: 'Prazo de Entrega', weight: 0.25 },
+            suporte: { name: 'Suporte Técnico', weight: 0.2 }
+        };
+
+        let currentSupplier = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.card');
+            const columns = document.querySelectorAll('.column-content');
+            const modal = document.getElementById('evaluation-modal');
+            const closeModal = document.getElementById('close-modal');
+            const evaluateButtons = document.querySelectorAll('.evaluate-btn');
+            const saveEvaluationBtn = document.getElementById('save-evaluation');
+            let draggedItem = null;
+            
+            // Adiciona eventos de drag and drop para os cards
+            cards.forEach(card => {
+                card.addEventListener('dragstart', function() {
+                    draggedItem = this;
+                    setTimeout(() => {
+                        this.classList.add('dragging');
+                    }, 0);
+                });
+                
+                card.addEventListener('dragend', function() {
+                    this.classList.remove('dragging');
+                    draggedItem = null;
+                    updateColumnCounts();
+                    updateProgress();
+                });
+            });
+            
+            // Adiciona eventos de drag and drop para as colunas
+            columns.forEach(column => {
+                column.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                });
+                
+                column.addEventListener('dragenter', function(e) {
+                    e.preventDefault();
+                    this.style.backgroundColor = '#e3e8e9';
+                });
+                
+                column.addEventListener('dragleave', function() {
+                    this.style.backgroundColor = '';
+                });
+                
+                column.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.style.backgroundColor = '';
+                    if (draggedItem) {
+                        this.appendChild(draggedItem);
+                    }
+                });
+            });
+            
+            // Abre o modal de avaliação
+            evaluateButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const supplierId = this.getAttribute('data-supplier');
+                    openEvaluationModal(supplierId);
+                });
+            });
+            
+            // Fecha o modal
+            closeModal.addEventListener('click', function() {
+                modal.style.display = 'none';
+            });
+            
+            // Salva a avaliação
+            saveEvaluationBtn.addEventListener('click', function() {
+                saveEvaluation();
+            });
+            
+            // Atualiza a contagem de cards em cada coluna
+            function updateColumnCounts() {
+                const columns = document.querySelectorAll('.column');
+                columns.forEach(column => {
+                    const header = column.querySelector('.column-header');
+                    const count = column.querySelectorAll('.card').length;
+                    header.querySelector('.badge').textContent = count;
+                });
+            }
+            
+            // Atualiza a barra de progresso baseado na coluna
+            function updateProgress() {
+                const columns = document.querySelectorAll('.column');
+                const progressMap = {
+                    'column-cotacao': 20,
+                    'column-proposta': 40,
+                    'column-analise': 60,
+                    'column-financeira': 70,
+                    'column-comparativo': 85,
+                    'column-decisao': 95,
+                    'column-contrato': 100
+                };
+                
+                columns.forEach(column => {
+                    const cards = column.querySelectorAll('.card');
+                    cards.forEach(card => {
+                        const progressBar = card.querySelector('.progress');
+                        const columnClass = Array.from(column.classList).find(cls => cls.startsWith('column-'));
+                        if (progressBar && columnClass && progressMap[columnClass]) {
+                            progressBar.style.width = progressMap[columnClass] + '%';
+                            
+                            // Atualiza o status
+                            const statusBadge = card.querySelector('.status-badge');
+                            if (statusBadge) {
+                                if (progressMap[columnClass] <= 40) {
+                                    statusBadge.className = 'status-badge status-pendente';
+                                    statusBadge.textContent = 'Pendente';
+                                } else if (progressMap[columnClass] <= 85) {
+                                    statusBadge.className = 'status-badge status-andamento';
+                                    statusBadge.textContent = 'Andamento';
+                                } else {
+                                    statusBadge.className = 'status-badge status-concluido';
+                                    statusBadge.textContent = 'Concluído';
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+            
+            // Abre o modal de avaliação para um fornecedor
+            function openEvaluationModal(supplierId) {
+                currentSupplier = supplierId;
+                const supplier = suppliers[supplierId];
+                
+                document.getElementById('modal-title').textContent = `Avaliar ${supplier.name}`;
+                
+                let modalBody = '<div class="criteria-list">';
+                for (const [key, criterion] of Object.entries(criteria)) {
+                    const currentValue = supplier.scores[key] || 0;
+                    modalBody += `
+                        <div class="criteria-item">
+                            <label for="${key}">${criterion.name} (Peso: ${criterion.weight * 100}%)</label>
+                            <input type="range" min="0" max="10" step="0.1" value="${currentValue}" 
+                                class="score-slider" id="slider-${key}" data-criterion="${key}">
+                            <div class="score-value" id="value-${key}">${currentValue}/10</div>
+                        </div>
+                    `;
+                }
+                modalBody += '</div>';
+                
+                document.getElementById('modal-body').innerHTML = modalBody;
+                
+                // Adiciona eventos aos sliders
+                const sliders = document.querySelectorAll('.score-slider');
+                sliders.forEach(slider => {
+                    slider.addEventListener('input', function() {
+                        const criterion = this.getAttribute('data-criterion');
+                        const valueDisplay = document.getElementById(`value-${criterion}`);
+                        valueDisplay.textContent = `${this.value}/10`;
+                    });
+                });
+                
+                modal.style.display = 'flex';
+            }
+            
+            // Salva a avaliação do fornecedor
+            function saveEvaluation() {
+                if (!currentSupplier) return;
+                
+                const sliders = document.querySelectorAll('.score-slider');
+                let totalScore = 0;
+                
+                sliders.forEach(slider => {
+                    const criterion = slider.getAttribute('data-criterion');
+                    const value = parseFloat(slider.value);
+                    suppliers[currentSupplier].scores[criterion] = value;
+                    totalScore += value * criteria[criterion].weight;
+                });
+                
+                suppliers[currentSupplier].totalScore = totalScore;
+                
+                // Fecha o modal
+                document.getElementById('evaluation-modal').style.display = 'none';
+                
+                // Atualiza a exibição dos resultados
+                updateEvaluationResults();
+            }
+            
+            // Atualiza a exibição dos resultados da avaliação
+            function updateEvaluationResults() {
+                const evaluationGrid = document.getElementById('evaluation-results');
+                let evaluationHTML = '';
+                
+                for (const [id, supplier] of Object.entries(suppliers)) {
+                    evaluationHTML += `
+                        <div class="evaluation-card">
+                            <h3>${supplier.name}</h3>
+                            <ul class="criteria-list">
+                    `;
+                    
+                    for (const [criterionId, criterion] of Object.entries(criteria)) {
+                        evaluationHTML += `
+                            <li>${criterion.name}: <span class="score">${supplier.scores[criterionId]}/10</span></li>
+                        `;
+                    }
+                    
+                    evaluationHTML += `
+                            </ul>
+                            <div class="evaluation-score">Nota: ${supplier.totalScore.toFixed(1)}/10</div>
+                        </div>
+                    `;
+                }
+                
+                evaluationGrid.innerHTML = evaluationHTML;
+                
+                // Atualiza o ranking
+                updateRanking();
+            }
+            
+            // Atualiza o ranking dos fornecedores
+            function updateRanking() {
+                // Verifica se todos os fornecedores foram avaliados
+                const allEvaluated = Object.values(suppliers).every(s => s.totalScore > 0);
+                
+                if (!allEvaluated) {
+                    document.getElementById('conclusion-text').innerHTML = `
+                        <h2>Complete a Avaliação dos Fornecedores</h2>
+                        <p>Use os botões "Avaliar" em cada card para inserir as notas dos critérios de avaliação.</p>
+                    `;
+                    return;
+                }
+                
+                // Cria array ordenado por pontuação
+                const rankedSuppliers = Object.entries(suppliers)
+                    .map(([id, data]) => ({ id, ...data }))
+                    .sort((a, b) => b.totalScore - a.totalScore);
+                
+                let rankingHTML = '';
+                
+                rankedSuppliers.forEach((supplier, index) => {
+                    rankingHTML += `
+                        <div class="rank-item rank-${index + 1}">
+                            <div class="rank-number">${index + 1}º</div>
+                            <h3>${supplier.name}</h3>
+                            <div class="evaluation-score">${supplier.totalScore.toFixed(1)}/10</div>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('ranking-results').innerHTML = rankingHTML;
+                
+                // Atualiza a conclusão
+                document.getElementById('conclusion-text').innerHTML = `
+                    <h2>Problema Solucionado! ✅</h2>
+                    <p>Com base na análise comparativa utilizando o sistema Kanban, identificamos que o <strong>${rankedSuppliers[0].name}</strong> apresenta a melhor relação custo-benefício com pontuação total de ${rankedSuppliers[0].totalScore.toFixed(1)}/10.</p>
+                    <p>O sistema proporcionou uma visão clara do processo de seleção, critérios de avaliação e permitiu uma decisão embasada em dados concretos.</p>
+                `;
+            }
+            
+            // Inicializa as contagens
+            updateColumnCounts();
+            updateEvaluationResults();
+        });
+    </script>
+</body>
+</html>
